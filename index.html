@@ -4,40 +4,62 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>HomeLab BOM</title>
+    <title>HomeLab BOM</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>HomeLAB BOM</h1>
-    <h3>This page has the purpose to share my Home LAB BOM. vSphere is mainly used for the infrastructure management and hosting, but the environment has also other network components that allow better scalability using Proxmox.
-         The following image shows a generic architecture of this setup, and at the end the list of hardware and software used:</h3>
-    <p>        
-    </p>
-    <img src="toShare.png">
-    <h4>List of software:</h4>
-    <ul>
-        <li>ESXi</li>
-        <li>vCenter</li>
-        <li>NSX-T</li>
-        <li>Pfsense</li>
-        <li>VyOS</li>
-        <li>Proxmox</li>
-      </ul>  
-      <p>
-      </p>
-      <h4>List of hardware:</h4>        
-      <ul>        
-        <li>2x DELL R620</li>
-        <ul>
-            <li>2x Intel Xeon E5-2670, 64GB RAM</li>
-            <li>2x Intel Xeon E5-2650 v2, 112GB RAM</li>
-           </ul>
-        <li>Cisco Small Business SG200-26</li>        
-        <li>Fujitsu Futro S920 ThinClient</li>
-        <ul>
-            <li>AMD dual core 2.2Ghz, 4GB RAM</li>
-        </ul>
-      </ul>                  
+    <div class="header">
+        <h2>HomeLAB BOM</h2>
+    </div>
+    <div class="row">
+        <div class="card">
+        This page has the purpose to share my Home LAB BOM. vSphere is mainly used for the infrastructure management and hosting, but the environment has also other network components that allow better scalability using Proxmox.
+        <p></p>
+        This home lab was built to test applications, develop automation, test infrastructure components, design/implement network topologies. Besides vSphere it contains other software for backups and Windows and Linux machines. <p></p>    
+            The following image shows a generic architecture of this setup, regarding how network was designed to be more scalable:
+        <p>        
+        </p>
+        <img src="toShare.png">
         
-
+        <p></p>
+    <!--<div class="row">
+        <div class="card">-->
+            Below is the list of software and hardware used in this setup: <p></p>
+        <b>List of software:</b>
+        <ul>
+            <li>ESXi</li>
+            <li>vCenter</li>
+            <li>NSX-T</li>
+            <li>Pfsense</li>
+            <li>VyOS</li>
+            <li>Proxmox</li>
+        </ul>  
+        <p>
+        </p>
+        <b>List of hardware:</b>        
+        <ul>        
+            <li>2x DELL R620</li>
+            <ul>
+                <li>2x Intel Xeon E5-2670, 64GB RAM</li>
+                <li>2x Intel Xeon E5-2650 v2, 112GB RAM</li>
+                <li>Mix of SAS disks in RAID5, and SSDs</li>
+                <li>4 port Gigabit Ethernet NIC</li>
+            </ul>
+            <li>Cisco Small Business SG200-26</li>        
+            <li>Fujitsu Futro S920 ThinClient</li>
+            <ul>
+                <li>AMD dual core 2.2Ghz, 4GB RAM</li>
+            </ul>
+        </ul>
+        <p>        
+        </p>          
+            <b>Average spent:</b> 900€
+        </div>
+    </div>
+    <div class="footer">
+        Still in development and building HomeLab BOM page
+        <p></p> 
+       @2022 Xanclas/lp_xanclas
+      </div>
 </body>
 </html>
