@@ -23,11 +23,12 @@
         <br>
         <br>
         <p><b>Brief description:</b> <br>
-        The ESXi on the yellow/brown square represents the host where the NSX-T Edge VMs are running. This includes the T0 and T1, a with configured BGP. <br>
-        The Proxmox on the blue square, hosts a Pfsense and a VyOS router, which this last creates the BGP session with the T0 Edge VM. There’s another VyOS router that runs on ESXi and connects directly to the Management network of the vCenter and ESXis.<br>
-        Dedicated subnets/VLANs are used to connect the VyOS on Proxmox to the T0 Edge VM (VLAN: 40), as the Pfsense to both VyOs routers (VLAN: 20). <br>
-        Route distribution is set to enable required NSX-T workloads (like Veeam for example) to connect the Management network of the vCenter. This management network also hoss a DNS server, which is used by all the workloads.<br>
-        Internet access is provided by the Pfsense, with S-NAT configuration. </p>
+            The ESXi on the yellow/brown square represents the host where the NSX-T Edge VMs are running. This includes the T0 and T1, a with configured eBGP.<br> 
+            The Proxmox on the blue square, hosts a Pfsense and a VyOS router, which this last creates the eBGP session with the T0 Edge VM. There’s another VyOS router that runs on ESXi and connects directly to the Management network of the vCenter and ESXis.<br>
+            Dedicated subnets/VLANs are used to connect the VyOS on Proxmox to the T0 Edge VM (VLAN: 40), as the Pfsense to both VyOs routers (VLAN: 20). <br>
+            Route distribution is set to enable required NSX-T workloads (like Veeam for example) to connect the Management network of the vCenter. This management network also hosts a DNS server, which is used by all the workloads.<br>
+            Internet access is provided by the Pfsense, by S-NAT configuration.
+            </p>
         <br>        
     
         <b>List of software and hardware used in this setup:</b>
