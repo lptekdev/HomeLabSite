@@ -9,10 +9,12 @@ body {
   font-size: 16px;
   padding: 20px;
   background: rgb(2,0,36);
-  background: linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(7,38,190,0.7623249983587185) 90%);
-  
+  background: linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(7,38,190,0.7623249983587185) 90%);  
 }
 
+.p {
+  line-height: 1.1;
+}
 /* Header */
 .header {
   padding: 30px;

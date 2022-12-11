@@ -13,19 +13,26 @@
     </div>
     <div class="row">
         <div class="card">
-        This page has the purpose to share my Home LAB BOM. vSphere is mainly used for the infrastructure management and hosting, but the environment has also other network components that allow better scalability using Proxmox.
-        <p></p>
-        This home lab was built to test applications, develop automation, test infrastructure components, design/implement network topologies. Besides vSphere it contains other software for backups and Windows and Linux machines. <p></p>    
-            The following image shows a generic architecture of this setup, regarding how network was designed to be more scalable:
-        <p>        
-        </p>
+        <p><b>Purpose and context:</b> <br>            
+        This page has the purpose to share my Home LAB BOM. vSphere is mainly used for the infrastructure management and hosting, but the environment has also other network components that allow better scalability using Proxmox.<br>
+        This home lab was built to test applications, develop automation, test infrastructure components, design/implement network topologies. Besides vSphere it contains other software for backups and Windows and Linux machines. <br></p>
+        <p>
+                    The following image shows a generic architecture of this setup, regarding how network was designed to be more scalable:<br></p>
         <img src="toShare.png">
         
-        <p></p>
-    <!--<div class="row">
-        <div class="card">-->
-            Below is the list of software and hardware used in this setup: <p></p>
-        <b>List of software:</b>
+        <br>
+        <br>
+        <p><b>Brief description:</b> <br>
+        The ESXi on the yellow/brown square represents the host where the NSX-T Edge VMs are running. This includes the T0 and T1, a with configured BGP. <br>
+        The Proxmox on the blue square, hosts a Pfsense and a VyOS router, which this last creates the BGP session with the T0 Edge VM. There’s another VyOS router that runs on ESXi and connects directly to the Management network of the vCenter and ESXis.<br>
+        Dedicated subnets/VLANs are used to connect the VyOS on Proxmox to the T0 Edge VM (VLAN: 40), as the Pfsense to both VyOs routers (VLAN: 20). <br>
+        Route distribution is set to enable required NSX-T workloads (like Veeam for example) to connect the Management network of the vCenter. This management network also hoss a DNS server, which is used by all the workloads.<br>
+        Internet access is provided by the Pfsense, with S-NAT configuration. </p>
+        <br>        
+    
+        <b>List of software and hardware used in this setup:</b>
+        <br>        
+        <i>Software:</i>
         <ul>
             <li>ESXi</li>
             <li>vCenter</li>
@@ -33,10 +40,8 @@
             <li>Pfsense</li>
             <li>VyOS</li>
             <li>Proxmox</li>
-        </ul>  
-        <p>
-        </p>
-        <b>List of hardware:</b>        
+        </ul>          
+        <i>Hardware:</i>     
         <ul>        
             <li>2x DELL R620</li>
             <ul>
@@ -50,10 +55,11 @@
             <ul>
                 <li>AMD dual core 2.2Ghz, 4GB RAM</li>
             </ul>
-        </ul>
-        <p>        
-        </p>          
-            <b>Average spent:</b> 900€
+        </ul>              
+        <br>                 
+        <p>
+        <b>Average spent:</b> 900€
+        </p>
         </div>
     </div>
     <div class="footer">
