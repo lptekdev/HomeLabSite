@@ -17,18 +17,22 @@
         This page has the purpose to share my Home LAB BOM. vSphere is mainly used for the infrastructure management and hosting, but the environment has also other network components that allow better scalability using Proxmox.<br>
         This home lab was built to test applications, develop automation, test infrastructure components, design/implement network topologies. Besides vSphere it contains other software for backups and Windows and Linux machines. <br></p>
         <p>
-                    The following image shows a generic architecture of this setup, regarding how network was designed to be more scalable:<br></p>
-        <img src="toShare.png">
+        The following image shows a generic network architecture of this setup. This kind of setup allows flexibility on workload provisioning and redundancy on access to NSX-T workloads:<br></p>
+        <img src="LPHomeSiteInfra - NoNetworks.png">
         
         <br>
         <br>
         <p><b>Brief description:</b> <br>
-            The ESXi on the yellow/brown square represents the host where the NSX-T Edge VMs are running. This includes the T0 and T1, a with configured eBGP.<br> 
-            The Proxmox on the blue square, hosts a Pfsense and a VyOS router, which this last creates the eBGP session with the T0 Edge VM. There’s another VyOS router that runs on ESXi and connects directly to the Management network of the vCenter and ESXis.<br>
-            Dedicated subnets/VLANs are used to connect the VyOS on Proxmox to the T0 Edge VM (VLAN: 40), as the Pfsense to both VyOs routers (VLAN: 20). <br>
-            Route distribution is set to enable required NSX-T workloads (like Veeam for example) to connect the Management network of the vCenter. This management network also hosts a DNS server, which is used by all the workloads.<br>
-            Internet access is provided by the Pfsense, by S-NAT configuration.
+            The firewall and R1 represents a Pfsense firewall and a VyOS router that are hosted in a Proxmox hypervisor as two VMs. The R1 has connected several networks, like the home lan subnet, the vSphere management network, and other vSphere related networks.<br> 
+            The R2 and R3 are also two VyOS VMs that form between each other and R1 an iBGP session. R2 and R3 are also connected to Edge nodes and by using an eBGP session, will receive the connected overlay subnets from NSX-T environment. At the same time, those also advertise the other networks to the NSX-T Edge nodes. With this design, redundancy in the access for the NSX-T workloads is achieved.<br>
+            NSX-T workloads can communicate with the vSphere management network, and accesses are controlled using the NSX-T distributed firewall.<br>
+            Despites of home lan and management network are connected to the same router, a distinct VRF separates these two domains, and the traffic needs to flow through the firewall, increasing the security.<br>
+            For backups purpose, a service interface on an isolated T1 gateway is created and connected to a VLAN segment. Veeam components are connected to an overlay segment, that is connected also to this isolated T1.
+            By having this service interface, it will allow the Veeam components to connect to physical servers that still use regular VLANs, like the HP Microserver Gen 8 with Truenas software which host the Veeam backups and provide iSCSI and NFS datastores for the vSphere environment. However, for iSCSI and NFS traffic will not flow through the Edge nodes. <br>
+            For providing storage to all the workloads, a 3 node vSAN cluster was configured (FTT=1 RAID 1 storage policy). Are also included services like DRS and HA. Each ESXi has a VMkernel adapter with NFC backup service configured, to be used for backup purposes by Veeam (using NBD protocol).<br>
             </p>
+
+
         <br>        
     
         <b>List of software and hardware used in this setup:</b>
@@ -37,36 +41,66 @@
         <ul>
             <li>ESXi</li>
             <li>vCenter</li>
+            <li>vSAN</li>
             <li>NSX-T</li>
             <li>Pfsense</li>
             <li>VyOS</li>
             <li>Proxmox</li>
+            <li>Veeam</li>
+            <li>Truenas</li>
         </ul>          
         <i>Hardware:</i>     
         <ul>        
-            <li>2x DELL R620</li>
+            <li>DELL R620</li>
             <ul>
-                <li>2x Intel Xeon E5-2670, 64GB RAM</li>
-                <li>2x Intel Xeon E5-2650 v2, 112GB RAM</li>
-                <li>Mix of SAS disks in RAID5, and SSDs</li>
+                <li>2x Intel Xeon E5-2680v2</li>
+                <li>64GB RAM</li>
+                <li>1x Samsung SSD 850 Evo 500GB + 2x SAS 600GB</li>
                 <li>4 port Gigabit Ethernet NIC</li>
             </ul>
+            <li>DELL R620</li>
+            <ul>
+                <li>2x Intel Xeon E5-2650v2</li>
+                <li>112GB RAM</li>
+                <li>1x Samsung SSD 850 Evo 500GB + 2x SAS 600GB</li>
+                <li>4 port Gigabit Ethernet NIC</li>
+            </ul>
+            <li>DELL R620</li>
+            <ul>
+                <li>2x Intel Xeon E5-2670</li>
+                <li>64GB RAM</li>
+                <li>1x Samsung SSD 850 Evo 500GB + 2x SAS 600GB</li>
+                <li>4 port Gigabit Ethernet NIC</li>
+            </ul>             
             <li>Cisco Small Business SG200-26</li>        
             <li>Fujitsu Futro S920 ThinClient</li>
             <ul>
-                <li>AMD dual core 2.2Ghz, 4GB RAM</li>
+                <li>AMD dual core 2.2Ghz</li>
+                <li>4GB RAM</li>
             </ul>
+            <li>HP Microserver Gen 8 with TrueNAS</li>                  
+            <ul>
+                <li>Intel Xeon E3-1230 V2</li>
+                <li>16GB RAM</li>
+                <li>2x SAS 4TB in Mirror</li>
+                <li>2x SATA 1TB in Mirror</li>
+                <li>SAS controller in IT Mode</li>
+                <li>2 port Gigabit Ethernet NIC</li>
+            </ul>
+        </ul>
+           
         </ul>              
         <br>                 
         <p>
-        <b>Average spent:</b> 900€
+        <b>Average spent:</b> 2000 USD
         </p>
         </div>
     </div>
     <div class="footer">
         HomeLab BOM page is still in development
         <p></p> 
-       @2022 Xanclas/lp_xanclas
+       @2022 lptekdev/luis-p-ribeiro
       </div>
 </body>
 </html>
+
