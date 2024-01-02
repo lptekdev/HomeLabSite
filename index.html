@@ -14,92 +14,251 @@
     <div class="row">
         <div class="card">
         <p><b>Purpose and context:</b> <br>            
-        This page has the purpose to share my Home LAB BOM. vSphere is mainly used for the infrastructure management and hosting, but the environment has also other network components that allow better scalability using Proxmox.<br>
-        This home lab was built to test applications, develop automation, test infrastructure components, design/implement network topologies. Besides vSphere it contains other software for backups and Windows and Linux machines. <br></p>
+            Like "every IT nerd" guy (and not only IT), we encourage ourselves to build and deploy a Home Lab where we can explore, test and develop things. 
+            Depending on each one of us, each Home Lab has certain specifications and characteristics, providing also different kind of services belonging to different categories.
+            My Home Lab is more focused in infrastructure services, and I use it to understand better network, storage and compute. 
+            It is served by three Proxmox nodes, installed also with a SDN (Software Defined Network) package, that allows me to scale more at the network level (beyond the VLANs limitations). 
+            At this time, I only use local attached storage in each node, not using for example Ceph. 
+            I setup this environment, with the help a VyOS router (R5), to behave like a multi-tenant environment, where I can use duplicated IP address space and avoid a direct access to the hosted workloads. A description and an image of this setup are below. <br>
+
+            The Tenant VRF will include:
+            <ul>
+                <li>Several routers inside of Proxmox SDN, as part of its operation and depending on the created subnets and gateways</li>
+                <li>An interface in R5 with the same VXLAN ID of the Zone VXLAN ID</li>
+                <li>A pseudo-interface in R5, representing a “public” network where NAT is used. NAT network will be used for internet access.</li>
+            </ul>
+            Pseudo interfaces in VyOS allow "slice" the same physical interface, allowing also to add an IP address to each of these pseudo-interfaces. Each of these pseudo-interfaces will be behave like having a public IP, belonging to a single Tenant. With this and NAT outbound configuration, workloads of each Tenant can communicate to outside.
+            The R5 will act as exit node on the Proxmox SDN configuration, but in Proxmox no configuration of exit-node is set. For every VRF, R5 announces a default route through the next-hop 10.2.3.1 (which is the firewall).
+            Since each Tenant address space (which is the same across Tenants) is within a Zone, and is not routable outside of it, VMs of different Tenants cannot communicate directly. Also, with an associated IP in NAT Network, Tenant workloads will be able to reach internet.
+            <br>
+            The image shows having the R5 with two VXLAN interfaces, looking like two physical interfaces. However, those belong to the same physical interface, to the interface that communicates directly with the Proxmox nodes. The separation is represented for better understanding of the boundaries of each Tenant.
+            <br></p>
         <p>
-        The following image shows a generic network architecture of this setup. This kind of setup allows flexibility on workload provisioning and redundancy on access to NSX-T workloads:<br></p>
-        <img src="LPHomeSiteInfra - NoNetworks.png">
-        
-        <br>
-        <br>
-        <p><b>Brief description:</b> <br>
-            The firewall and R1 represents a Pfsense firewall and a VyOS router that are hosted in a Proxmox hypervisor as two VMs. The R1 has connected several networks, like the home lan subnet, the vSphere management network, and other vSphere related networks.<br> 
-            The R2 and R3 are also two VyOS VMs that form between each other and R1 an iBGP session. R2 and R3 are also connected to Edge nodes and by using an eBGP session, will receive the connected overlay subnets from NSX-T environment. At the same time, those also advertise the other networks to the NSX-T Edge nodes. With this design, redundancy in the access for the NSX-T workloads is achieved.<br>
-            NSX-T workloads can communicate with the vSphere management network, and accesses are controlled using the NSX-T distributed firewall.<br>
-            Despites of home lan and management network are connected to the same router, a distinct VRF separates these two domains, and the traffic needs to flow through the firewall, increasing the security.<br>
-            For backups purpose, a service interface on an isolated T1 gateway is created and connected to a VLAN segment. Veeam components are connected to an overlay segment, that is connected also to this isolated T1.
-            By having this service interface, it will allow the Veeam components to connect to physical servers that still use regular VLANs, like the HP Microserver Gen 8 with Truenas software which host the Veeam backups and provide iSCSI and NFS datastores for the vSphere environment. However, for iSCSI and NFS traffic will not flow through the Edge nodes. <br>
-            For providing storage to all the workloads, a 3 node vSAN cluster was configured (FTT=1 RAID 1 storage policy). Are also included services like DRS and HA. Each ESXi has a VMkernel adapter with NFC backup service configured, to be used for backup purposes by Veeam (using NBD protocol).<br>
-            </p>
-
-
-        <br>        
+        <b>Logical Topology:</b><br>
+        <img src="TenantOverview.png">
     
-        <b>List of software and hardware used in this setup:</b>
-        <br>        
-        <i>Software:</i>
-        <ul>
-            <li>ESXi</li>
-            <li>vCenter</li>
-            <li>vSAN</li>
-            <li>NSX-T</li>
-            <li>Pfsense</li>
-            <li>VyOS</li>
-            <li>Proxmox</li>
-            <li>Veeam</li>
-            <li>Truenas</li>
-        </ul>          
-        <i>Hardware:</i>     
-        <ul>        
-            <li>DELL R620</li>
-            <ul>
-                <li>2x Intel Xeon E5-2680v2</li>
-                <li>64GB RAM</li>
-                <li>1x Samsung SSD 850 Evo 500GB + 2x SAS 600GB</li>
-                <li>4 port Gigabit Ethernet NIC</li>
-            </ul>
-            <li>DELL R620</li>
-            <ul>
-                <li>2x Intel Xeon E5-2650v2</li>
-                <li>112GB RAM</li>
-                <li>1x Samsung SSD 850 Evo 500GB + 2x SAS 600GB</li>
-                <li>4 port Gigabit Ethernet NIC</li>
-            </ul>
-            <li>DELL R620</li>
-            <ul>
-                <li>2x Intel Xeon E5-2670</li>
-                <li>64GB RAM</li>
-                <li>1x Samsung SSD 850 Evo 500GB + 2x SAS 600GB</li>
-                <li>4 port Gigabit Ethernet NIC</li>
-            </ul>             
-            <li>Cisco Small Business SG200-26</li>        
-            <li>Fujitsu Futro S920 ThinClient</li>
-            <ul>
-                <li>AMD dual core 2.2Ghz</li>
-                <li>4GB RAM</li>
-            </ul>
-            <li>HP Microserver Gen 8 with TrueNAS</li>                  
-            <ul>
-                <li>Intel Xeon E3-1230 V2</li>
-                <li>16GB RAM</li>
-                <li>2x SAS 4TB in Mirror</li>
-                <li>2x SATA 1TB in Mirror</li>
-                <li>SAS controller in IT Mode</li>
-                <li>2 port Gigabit Ethernet NIC</li>
-            </ul>
-        </ul>
-           
-        </ul>              
-        <br>                 
-        <p>
-        <b>Average spent:</b> 2000 USD
         </p>
+       
+        <p>
+            <b>Physical Topology:</b> <br>
+            <img src="EvpnR5-Proxmox.png">
+            
+        </p>
+        <p><b>Below also the VyOS router R5 configuration:</b> <br>
+            <pre>
+                interfaces {
+                    bridge br5000 {
+                        description customB
+                        member {
+                            interface vxlan5000 {
+                            }
+                        }
+                        vrf customB
+                    }
+                    bridge br5002 {
+                        description tenantC
+                        member {
+                            interface vxlan5002 {
+                            }
+                        }
+                        vrf tenantC
+                    }
+                    ethernet eth0 {
+                        address 10.2.1.2/24
+                        vrf management
+                    }
+                    ethernet eth1 {
+                        address dhcp
+                    }
+                    ethernet eth2 {
+                        address 10.2.2.2/24
+                        description "to proxmox VTEPs"
+                        mtu 1600
+                    }
+                    loopback lo {
+                    }
+                    pseudo-ethernet peth1 {
+                        address 10.2.3.10/24
+                        description NATcustomB
+                        source-interface eth1
+                        vrf customB
+                    }
+                    pseudo-ethernet peth2 {
+                        address 10.2.3.11/24
+                        description NATtenantC
+                        source-interface eth1
+                        vrf tenantC
+                    }
+                    vxlan vxlan5000 {
+                        mtu 1550
+                        parameters {
+                            nolearning
+                        }
+                        port 4789
+                        source-address 10.2.2.2
+                        vni 5000
+                    }
+                    vxlan vxlan5002 {
+                        mtu 1550
+                        parameters {
+                            nolearning
+                        }
+                        port 4789
+                        source-address 10.2.2.2
+                        vni 5002
+                    }
+                }
+                nat {
+                    source {
+                        rule 20 {
+                            outbound-interface {
+                                name peth2
+                            }
+                            translation {
+                                address masquerade
+                            }
+                        }
+                        rule 21 {
+                            outbound-interface {
+                                name peth1
+                            }
+                            source {
+                                group {
+                                }
+                            }
+                            translation {
+                                address masquerade
+                            }
+                        }
+                    }
+                }
+                protocols {
+                    bgp {
+                        address-family {
+                            ipv4-unicast {
+                                redistribute {
+                                }
+                            }
+                            l2vpn-evpn {
+                                advertise {
+                                    ipv4 {
+                                        unicast {
+                                        }
+                                    }
+                                }
+                                advertise-all-vni
+                            }
+                        }
+                        neighbor 10.2.2.4 {
+                            peer-group ibgp
+                        }
+                        neighbor 10.2.2.6 {
+                            peer-group ibgp
+                        }
+                        neighbor 10.2.2.7 {
+                            peer-group ibgp
+                        }
+                        parameters {
+                            log-neighbor-changes
+                        }
+                        peer-group ibgp {
+                            address-family {
+                                l2vpn-evpn {
+                                }
+                            }
+                            remote-as 65003
+                            update-source eth2
+                        }
+                        system-as 65003
+                    }
+                }
+                vrf {
+                    name customB {
+                        protocols {
+                            bgp {
+                                address-family {
+                                    ipv4-unicast {
+                                        network 0.0.0.0/0 {
+                                        }
+                                        redistribute {
+                                            connected {
+                                            }
+                                        }
+                                    }
+                                    l2vpn-evpn {
+                                        advertise {
+                                            ipv4 {
+                                                unicast {
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                system-as 65003
+                            }
+                            static {
+                                route 0.0.0.0/0 {
+                                    next-hop 10.2.3.1 {
+                                    }
+                                }
+                            }
+                        }
+                        table 5000
+                        vni 5000
+                    }
+                    name management {
+                        protocols {
+                            static {
+                                route 0.0.0.0/0 {
+                                    next-hop 10.2.1.1 {
+                                    }
+                                }
+                            }
+                        }
+                        table 100
+                    }
+                    name tenantC {
+                        protocols {
+                            bgp {
+                                address-family {
+                                    ipv4-unicast {
+                                        network 0.0.0.0/0 {
+                                        }
+                                        redistribute {
+                                            connected {
+                                            }
+                                        }
+                                    }
+                                    l2vpn-evpn {
+                                        advertise {
+                                            ipv4 {
+                                                unicast {
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                system-as 65003
+                            }
+                            static {
+                                route 0.0.0.0/0 {
+                                    next-hop 10.2.3.1 {
+                                    }
+                                }
+                            }
+                        }
+                        table 5002
+                        vni 5002
+                    }
+                }
+            </pre>
+        <b>For future work I'd like to expand the Tenant infrastructure, when for example IP exhaustion might occur.</b>
         </div>
     </div>
     <div class="footer">
         HomeLab BOM page is still in development
         <p></p> 
-       @2022 lptekdev/luis-p-ribeiro
+       @2024 lptekdev/luis-p-ribeiro
       </div>
 </body>
 </html>
