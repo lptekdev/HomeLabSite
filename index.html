@@ -36,6 +36,7 @@
             </p>
             Each tenant has a dedicated perimeter firewall, which already mentioned is Pfsense. The perimeter firewall allows the tenant to configure north-south firewall rules, IPSec tunnels and NAT for internet access (besides other features).<br>
             In the routing configuration, the firewall has configured a route to the Tenant address space through the gateway IP: 172.16.0.2 . 
+            Each firewall is a virtual machine, which connects to the Router1 with a unique VLAN.
         
             <br>
         <p>
