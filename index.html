@@ -29,7 +29,7 @@
             Configuring a Zone creates a VRF in Proxmox server. <br>
             Since the VyOS Router1 supports EVPN, it can act as a peer together with the Proxmox server. 
             In the Router1 must be configured a VXLAN interface for each tenant with the same ID as the tenant Zone, and a pseudo-interface that will connect to the upstream perimeter firewall. 
-            Pseudo interfaces in VyOS allows "slice" the same physical interface and configure an IP address. <br>
+            Pseudo interfaces in VyOS allows "slice" the same physical interface and configure an IP address and a VLAN ID (that identify each tenant). <br>
             Besides this, a default static route via the firewall is configured in Router1 and also advertised by BGP to the Tenant VRF in the Proxmox server. <br>
             <p>
 
