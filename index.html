@@ -55,11 +55,6 @@
                 set service ssh vrf management
                 set system host-name router1
 
-                #configures the interfaces eth1 with VLAN to upstream pfsense
-                set interfaces ethernet eth1 address 10.0.0.2/24
-                set interfaces ethernet eth1 description 'topfsense'
-
-
                 #configures the interfaces eth2 with in the same subnet of Proxmox VTEPs
                 set interfaces ethernet eth2 address 10.0.1.1/24
                 set interfaces ethernet eth2 description 'proxmox nodes'
@@ -93,6 +88,19 @@
 
                 #adds the static route to internet
                 set vrf name tenantB protocols static route 0.0.0.0/0 next-hop 172.16.0.1
+
+                #creates the necessary bridge
+                set interfaces bridge br5000 description tenantB
+                set interfaces bridge br5000 member interface vxlan5000
+                set interfaces bridge br5000 vrf tenantB
+
+
+                #set the pseudo interfaces to tenantB tenant with VLAN 4 to access to pfsense
+                set interfaces pseudo-ethernet peth1 source-interface eth1
+                set interfaces pseudo-ethernet peth1 vif 4
+                set interfaces pseudo-ethernet peth1 vif 4 description PseuIntTenantB
+                set interfaces pseudo-ethernet peth1 vif 4 address 172.16.0.2/24
+                set interfaces pseudo-ethernet peth1 vif 4 vrf tenantB
 
             </pre>
         <b>For future work:</b> I'd like to expand the Tenant infrastructure, enabling two different address spaces of the same tenant to communicate without the need of VPN site-2-site.
