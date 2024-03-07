@@ -60,7 +60,7 @@
                 set interfaces ethernet eth2 description 'proxmox nodes'
                 set interfaces ethernet eth2 mtu 1600
 
-                #configures the BGP general settings, adding the Proxmox BGP peer group
+                #configures the BGP general settings, adding the Proxmox to BGP peer group
                 set protocols bgp address-family l2vpn-evpn advertise ipv4 unicast
                 set protocols bgp address-family l2vpn-evpn advertise-all-vni
                 set protocols bgp system-as 65003
