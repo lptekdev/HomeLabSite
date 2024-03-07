@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="header">
-        <h2>HomeLAB BOM</h2>
+        <h2>HomeLAB</h2>
     </div>
     <div class="row">
         <div class="card">
@@ -17,248 +17,91 @@
             Like "every IT nerd" guy (and not only IT), we encourage ourselves to build and deploy a Home Lab where we can explore, test and develop things. 
             Depending on each one of us, each Home Lab has certain specifications and characteristics, providing also different kind of services belonging to different categories.
             My Home Lab is more focused in infrastructure services, and I use it to understand better network, storage and compute. 
-            It is served by three Proxmox nodes, installed also with a SDN (Software Defined Network) package, that allows me to scale more at the network level (beyond the VLANs limitations). 
-            At this time, I only use local attached storage in each node, not using for example Ceph. 
-            I setup this environment, with the help a VyOS router (R5), to behave like a multi-tenant environment, where I can use duplicated IP address space and avoid a direct access to the hosted workloads. A description and an image of this setup are below. <br>
+            It is served by one Proxmox server, installed also with a SDN (Software Defined Network) package, that allows me to scale more at the network level (beyond the VLANs limitations). 
+            At this time, I only use local attached storage, suported by a nvme disk. 
+            I setup this environment, with the help a VyOS router (Router1) and a Pfsense firewall, to behave like a multi-tenant environment, where I can use duplicated IP address space and a perimeter firewall for internet access. 
+            A description and an image of this setup are below. <br>
+            <p>
+                
+            </p>
 
-            The Tenant VRF will include:
-            <ul>
-                <li>Several routers inside of Proxmox SDN, as part of its operation and depending on the created subnets and gateways</li>
-                <li>An interface in R5 with the same VXLAN ID of the Zone VXLAN ID</li>
-                <li>A pseudo-interface in R5, representing a “public” network where NAT is used. NAT network will be used for internet access.</li>
-            </ul>
-            Pseudo interfaces in VyOS allow "slice" the same physical interface, allowing also to add an IP address to each of these pseudo-interfaces. Each of these pseudo-interfaces will be behave like having a public IP, belonging to a single Tenant. With this and NAT outbound configuration, workloads of each Tenant can communicate to outside.
-            The R5 will act as exit node on the Proxmox SDN configuration, but in Proxmox no configuration of exit-node is set. For every VRF, R5 announces a default route through the next-hop 10.2.3.1 (which is the firewall).
-            Since each Tenant address space (which is the same across Tenants) is within a Zone, and is not routable outside of it, VMs of different Tenants cannot communicate directly. Also, with an associated IP in NAT Network, Tenant workloads will be able to reach internet.
+            Each tenant has its own address space (by default: 10.0.0.0/16) and is isolated by a Zone (configured in the Proxmox SDN). Tenant VNETs are created based on the workloads requirements and belongs to only one Zone. 
+            Configuring a Zone creates a VRF in Proxmox server. <br>
+            Since the VyOS Router1 supports EVPN, it can act as a peer together with the Proxmox server. 
+            In the Router1 must be configured a VXLAN interface for each tenant with the same ID as the tenant Zone, and a pseudo-interface that will connect to the upstream perimeter firewall. 
+            Pseudo interfaces in VyOS allows "slice" the same physical interface and configure an IP address. <br>
+            Besides this, a default static route via the firewall is configured in Router1 and also advertised by BGP to the Tenant VRF in the Proxmox server. <br>
+            <p>
+
+            </p>
+            Each tenant has a dedicated perimeter firewall, which already mentioned is Pfsense. The perimeter firewall allows the tenant to configure north-south firewall rules, IPSec tunnels and NAT for internet access (besides other features).<br>
+            In the routing configuration, the firewall has configured a route to the Tenant address space through the gateway IP: 172.16.0.2 . 
+        
             <br>
-            The image shows having the R5 with two VXLAN interfaces, looking like two physical interfaces. However, those belong to the same physical interface, to the interface that communicates directly with the Proxmox nodes. The separation is represented for better understanding of the boundaries of each Tenant.
-            <br></p>
         <p>
         <b>Logical Topology:</b><br>
-        <img src="TenantOverview.png">
+        <img src="TenantOverview_perimeterFW.png">
     
         </p>
-       
-        <p>
-            <b>Physical Topology:</b> <br>
-            <img src="EvpnR5-Proxmox.png">
-            
-        </p>
-        <p><b>Below also the VyOS router R5 configuration:</b> <br>
+
+        <p><b>Below also the VyOS Router1 issued commands:</b> <br>
             <pre>
-                interfaces {
-                    bridge br5000 {
-                        description customB
-                        member {
-                            interface vxlan5000 {
-                            }
-                        }
-                        vrf customB
-                    }
-                    bridge br5002 {
-                        description tenantC
-                        member {
-                            interface vxlan5002 {
-                            }
-                        }
-                        vrf tenantC
-                    }
-                    ethernet eth0 {
-                        address 10.2.1.2/24
-                        vrf management
-                    }
-                    ethernet eth1 {
-                        address dhcp
-                    }
-                    ethernet eth2 {
-                        address 10.2.2.2/24
-                        description "to proxmox VTEPs"
-                        mtu 1600
-                    }
-                    loopback lo {
-                    }
-                    pseudo-ethernet peth1 {
-                        address 10.2.3.10/24
-                        description NATcustomB
-                        source-interface eth1
-                        vrf customB
-                    }
-                    pseudo-ethernet peth2 {
-                        address 10.2.3.11/24
-                        description NATtenantC
-                        source-interface eth1
-                        vrf tenantC
-                    }
-                    vxlan vxlan5000 {
-                        mtu 1550
-                        parameters {
-                            nolearning
-                        }
-                        port 4789
-                        source-address 10.2.2.2
-                        vni 5000
-                    }
-                    vxlan vxlan5002 {
-                        mtu 1550
-                        parameters {
-                            nolearning
-                        }
-                        port 4789
-                        source-address 10.2.2.2
-                        vni 5002
-                    }
-                }
-                nat {
-                    source {
-                        rule 20 {
-                            outbound-interface {
-                                name peth2
-                            }
-                            translation {
-                                address masquerade
-                            }
-                        }
-                        rule 21 {
-                            outbound-interface {
-                                name peth1
-                            }
-                            source {
-                                group {
-                                }
-                            }
-                            translation {
-                                address masquerade
-                            }
-                        }
-                    }
-                }
-                protocols {
-                    bgp {
-                        address-family {
-                            ipv4-unicast {
-                                redistribute {
-                                }
-                            }
-                            l2vpn-evpn {
-                                advertise {
-                                    ipv4 {
-                                        unicast {
-                                        }
-                                    }
-                                }
-                                advertise-all-vni
-                            }
-                        }
-                        neighbor 10.2.2.4 {
-                            peer-group ibgp
-                        }
-                        neighbor 10.2.2.6 {
-                            peer-group ibgp
-                        }
-                        neighbor 10.2.2.7 {
-                            peer-group ibgp
-                        }
-                        parameters {
-                            log-neighbor-changes
-                        }
-                        peer-group ibgp {
-                            address-family {
-                                l2vpn-evpn {
-                                }
-                            }
-                            remote-as 65003
-                            update-source eth2
-                        }
-                        system-as 65003
-                    }
-                }
-                vrf {
-                    name customB {
-                        protocols {
-                            bgp {
-                                address-family {
-                                    ipv4-unicast {
-                                        network 0.0.0.0/0 {
-                                        }
-                                        redistribute {
-                                            connected {
-                                            }
-                                        }
-                                    }
-                                    l2vpn-evpn {
-                                        advertise {
-                                            ipv4 {
-                                                unicast {
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                system-as 65003
-                            }
-                            static {
-                                route 0.0.0.0/0 {
-                                    next-hop 10.2.3.1 {
-                                    }
-                                }
-                            }
-                        }
-                        table 5000
-                        vni 5000
-                    }
-                    name management {
-                        protocols {
-                            static {
-                                route 0.0.0.0/0 {
-                                    next-hop 10.2.1.1 {
-                                    }
-                                }
-                            }
-                        }
-                        table 100
-                    }
-                    name tenantC {
-                        protocols {
-                            bgp {
-                                address-family {
-                                    ipv4-unicast {
-                                        network 0.0.0.0/0 {
-                                        }
-                                        redistribute {
-                                            connected {
-                                            }
-                                        }
-                                    }
-                                    l2vpn-evpn {
-                                        advertise {
-                                            ipv4 {
-                                                unicast {
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                system-as 65003
-                            }
-                            static {
-                                route 0.0.0.0/0 {
-                                    next-hop 10.2.3.1 {
-                                    }
-                                }
-                            }
-                        }
-                        table 5002
-                        vni 5002
-                    }
-                }
+                
+                #configures the management vrf for router access
+                set vrf name management
+                set vrf name management table 100
+                set interfaces ethernet eth0 vrf management
+                set interfaces ethernet eth0 address 192.168.2.150/24
+                set service ssh vrf management
+                set system host-name router1
+
+                #configures the interfaces eth1 with VLAN to upstream pfsense
+                set interfaces ethernet eth1 address 10.0.0.2/24
+                set interfaces ethernet eth1 description 'topfsense'
+
+
+                #configures the interfaces eth2 with in the same subnet of Proxmox VTEPs
+                set interfaces ethernet eth2 address 10.0.1.1/24
+                set interfaces ethernet eth2 description 'proxmox nodes'
+                set interfaces ethernet eth2 mtu 1600
+
+                #configures the BGP general settings, adding the Proxmox BGP peer group
+                set protocols bgp address-family l2vpn-evpn advertise ipv4 unicast
+                set protocols bgp address-family l2vpn-evpn advertise-all-vni
+                set protocols bgp system-as 65003
+                set protocols bgp neighbor 10.0.1.2 peer-group ibgp
+                set protocols bgp parameters log-neighbor-changes
+                set protocols bgp peer-group ibgp address-family l2vpn-evpn
+                set protocols bgp peer-group ibgp remote-as 65003
+                set protocols bgp peer-group ibgp update-source eth2
+
+                #set the VXLAN interface for TenantB 
+                #(the VXLAN ID should be the same ID of the VRF-VXLAN from Zone)
+                set interfaces vxlan vxlan5000 mtu 1550
+                set interfaces vxlan vxlan5000 parameters nolearning
+                set interfaces vxlan vxlan5000 port 4789
+                set interfaces vxlan vxlan5000 source-address 10.0.1.1
+                set interfaces vxlan vxlan5000 vni 5000
+
+
+                #creates the Tenant B VRF
+                set vrf name tenantB protocols bgp address-family l2vpn-evpn advertise ipv4 unicast
+                set vrf name tenantB protocols bgp system-as 65003
+                set vrf name tenantB protocols bgp address-family ipv4-unicast redistribute static
+                set vrf name tenantB table 5000
+                set vrf name tenantB vni 5000
+
+                #adds the static route to internet
+                set vrf name tenantB protocols static route 0.0.0.0/0 next-hop 172.16.0.1
+
             </pre>
-        <b>For future work I'd like to expand the Tenant infrastructure, when for example IP exhaustion might occur.</b>
+        <b>For future work:</b> I'd like to expand the Tenant infrastructure, enabling two different address spaces of the same tenant to communicate without the need of VPN site-2-site.
         </div>
     </div>
     <div class="footer">
-        HomeLab BOM page is still in development
+        My HomeLab page is still in development
         <p></p> 
-       @2024 lptekdev/luis-p-ribeiro
+       @2024 lptekdev/luispribeiro
       </div>
 </body>
 </html>
