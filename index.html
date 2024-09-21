@@ -14,103 +14,92 @@
     <div class="row">
         <div class="card">
         <p><b>Purpose and context:</b> <br>            
-            Like "every IT nerd" guy (and not only IT), we encourage ourselves to build and deploy a Home Lab where we can explore, test and develop things. 
-            Depending on each one of us, each Home Lab has certain specifications and characteristics, providing also different kind of services belonging to different categories.
-            My Home Lab is more focused in infrastructure services, and I use it to understand better network, storage and compute. 
-            It is served by one Proxmox server, installed also with a SDN (Software Defined Network) package, that allows me to scale more at the network level (beyond the VLANs limitations). 
-            At this time, I only use local attached storage, suported by a nvme disk. 
-            I setup this environment, with the help a VyOS router (Router1) and a Pfsense firewall, to behave like a multi-tenant environment, where I can use duplicated IP address space and a perimeter firewall for internet access. 
-            A description and an image of this setup are below. <br>
-            <p>
-                
-            </p>
-
-            Each tenant has its own address space (by default: 10.0.0.0/16) and is isolated by a Zone (configured in the Proxmox SDN). Tenant VNETs are created based on the workloads requirements and belongs to only one Zone. 
-            Configuring a Zone creates a VRF in Proxmox server. <br>
-            Since the VyOS Router1 supports EVPN, it can act as a peer together with the Proxmox server. 
-            In the Router1 must be configured a VXLAN interface for each tenant with the same ID as the tenant Zone, and a pseudo-interface that will connect to the upstream perimeter firewall. 
-            Pseudo interfaces in VyOS allows "slice" the same physical interface and configure an IP address and a VLAN ID (that identify each tenant). <br>
-            Besides this, a default static route via the firewall is configured in Router1 and also advertised by BGP to the Tenant VRF in the Proxmox server. <br>
-            <p>
-
-            </p>
-            Each tenant has a dedicated perimeter firewall, which already mentioned is Pfsense. The perimeter firewall allows the tenant to configure north-south firewall rules, IPSec tunnels and NAT for internet access (besides other features).<br>
-            In the routing configuration, the firewall has configured a route to the Tenant address space through the gateway IP: 172.16.0.2 . 
-            Each firewall is a virtual machine, which connects to the Router1 with a unique VLAN.
-        
-            <br>
+        This page has the purpose to share my Home LAB BOM. vSphere is mainly used for the infrastructure management and hosting, but the environment has also other network components that allow better scalability using Proxmox.<br>
+        This home lab was built to test applications, develop automation, test infrastructure components, design/implement network topologies. Besides vSphere it contains other software for backups and Windows and Linux machines. <br></p>
         <p>
-        <b>Logical Topology:</b><br>
-        <img src="TenantOverview_perimeterFW.png">
+        The following image shows a generic network architecture of this setup. This kind of setup allows flexibility on workload provisioning and redundancy on access to NSX-T workloads:<br></p>
+        <img src="LPHomeSiteInfra - NoNetworks.png">
+        
+        <br>
+        <br>
+        <p><b>Brief description:</b> <br>
+            The firewall and R1 represents a Pfsense firewall and a VyOS router that are hosted in a Proxmox hypervisor as two VMs. The R1 has connected several networks, like the home lan subnet, the vSphere management network, and other vSphere related networks.<br> 
+            The R2 and R3 are also two VyOS VMs that form between each other and R1 an iBGP session. R2 and R3 are also connected to Edge nodes and by using an eBGP session, will receive the connected overlay subnets from NSX-T environment. At the same time, those also advertise the other networks to the NSX-T Edge nodes. With this design, redundancy in the access for the NSX-T workloads is achieved.<br>
+            NSX-T workloads can communicate with the vSphere management network, and accesses are controlled using the NSX-T distributed firewall.<br>
+            Despites of home lan and management network are connected to the same router, a distinct VRF separates these two domains, and the traffic needs to flow through the firewall, increasing the security.<br>
+            For backups purpose, a service interface on an isolated T1 gateway is created and connected to a VLAN segment. Veeam components are connected to an overlay segment, that is connected also to this isolated T1.
+            By having this service interface, it will allow the Veeam components to connect to physical servers that still use regular VLANs, like the HP Microserver Gen 8 with Truenas software which host the Veeam backups and provide iSCSI and NFS datastores for the vSphere environment. However, for iSCSI and NFS traffic will not flow through the Edge nodes. <br>
+            For providing storage to all the workloads, a 3 node vSAN cluster was configured (FTT=1 RAID 1 storage policy). Are also included services like DRS and HA. Each ESXi has a VMkernel adapter with NFC backup service configured, to be used for backup purposes by Veeam (using NBD protocol).<br>
+            </p>
+
+
+        <br>        
     
+        <b>List of software and hardware used in this setup:</b>
+        <br>        
+        <i>Software:</i>
+        <ul>
+            <li>ESXi</li>
+            <li>vCenter</li>
+            <li>vSAN</li>
+            <li>NSX-T</li>
+            <li>Pfsense</li>
+            <li>VyOS</li>
+            <li>Proxmox</li>
+            <li>Veeam</li>
+            <li>Truenas</li>
+        </ul>          
+        <i>Hardware:</i>     
+        <ul>        
+            <li>DELL R620</li>
+            <ul>
+                <li>2x Intel Xeon E5-2680v2</li>
+                <li>64GB RAM</li>
+                <li>1x Samsung SSD 850 Evo 500GB + 2x SAS 600GB</li>
+                <li>4 port Gigabit Ethernet NIC</li>
+            </ul>
+            <li>DELL R620</li>
+            <ul>
+                <li>2x Intel Xeon E5-2650v2</li>
+                <li>112GB RAM</li>
+                <li>1x Samsung SSD 850 Evo 500GB + 2x SAS 600GB</li>
+                <li>4 port Gigabit Ethernet NIC</li>
+            </ul>
+            <li>DELL R620</li>
+            <ul>
+                <li>2x Intel Xeon E5-2670</li>
+                <li>64GB RAM</li>
+                <li>1x Samsung SSD 850 Evo 500GB + 2x SAS 600GB</li>
+                <li>4 port Gigabit Ethernet NIC</li>
+            </ul>             
+            <li>Cisco Small Business SG200-26</li>        
+            <li>Fujitsu Futro S920 ThinClient</li>
+            <ul>
+                <li>AMD dual core 2.2Ghz</li>
+                <li>4GB RAM</li>
+            </ul>
+            <li>HP Microserver Gen 8 with TrueNAS</li>                  
+            <ul>
+                <li>Intel Xeon E3-1230 V2</li>
+                <li>16GB RAM</li>
+                <li>2x SAS 4TB in Mirror</li>
+                <li>2x SATA 1TB in Mirror</li>
+                <li>SAS controller in IT Mode</li>
+                <li>2 port Gigabit Ethernet NIC</li>
+            </ul>
+        </ul>
+           
+        </ul>              
+        <br>                 
+        <p>
+        <b>Average spent:</b> 2000 USD
         </p>
-
-        <p><b>Below also the VyOS Router1 issued commands:</b> <br>
-            <pre>
-                
-                #configures the management vrf for router access
-                set vrf name management
-                set vrf name management table 100
-                set interfaces ethernet eth0 vrf management
-                set interfaces ethernet eth0 address 192.168.2.150/24
-                set service ssh vrf management
-                set system host-name router1
-
-                #configures the interfaces eth2 with in the same subnet of Proxmox VTEPs
-                set interfaces ethernet eth2 address 10.0.1.1/24
-                set interfaces ethernet eth2 description 'proxmox nodes'
-                set interfaces ethernet eth2 mtu 1600
-
-                #configures the BGP general settings, adding the Proxmox to BGP peer group
-                set protocols bgp address-family l2vpn-evpn advertise ipv4 unicast
-                set protocols bgp address-family l2vpn-evpn advertise-all-vni
-                set protocols bgp system-as 65003
-                set protocols bgp neighbor 10.0.1.2 peer-group ibgp
-                set protocols bgp parameters log-neighbor-changes
-                set protocols bgp peer-group ibgp address-family l2vpn-evpn
-                set protocols bgp peer-group ibgp remote-as 65003
-                set protocols bgp peer-group ibgp update-source eth2
-
-                #set the VXLAN interface for TenantB 
-                #(the VXLAN ID should be the same ID of the VRF-VXLAN from Zone)
-                set interfaces vxlan vxlan5000 mtu 1550
-                set interfaces vxlan vxlan5000 parameters nolearning
-                set interfaces vxlan vxlan5000 port 4789
-                set interfaces vxlan vxlan5000 source-address 10.0.1.1
-                set interfaces vxlan vxlan5000 vni 5000
-
-
-                #creates the Tenant B VRF
-                set vrf name tenantB protocols bgp address-family l2vpn-evpn advertise ipv4 unicast
-                set vrf name tenantB protocols bgp system-as 65003
-                set vrf name tenantB protocols bgp address-family ipv4-unicast redistribute static
-                set vrf name tenantB table 5000
-                set vrf name tenantB vni 5000
-
-                #adds the static route to internet
-                set vrf name tenantB protocols static route 0.0.0.0/0 next-hop 172.16.0.1
-
-                #creates the necessary bridge
-                set interfaces bridge br5000 description tenantB
-                set interfaces bridge br5000 member interface vxlan5000
-                set interfaces bridge br5000 vrf tenantB
-
-
-                #set the pseudo interfaces to tenantB tenant with VLAN 4 to access to pfsense
-                set interfaces pseudo-ethernet peth1 source-interface eth1
-                set interfaces pseudo-ethernet peth1 vif 4
-                set interfaces pseudo-ethernet peth1 vif 4 description PseuIntTenantB
-                set interfaces pseudo-ethernet peth1 vif 4 address 172.16.0.2/24
-                set interfaces pseudo-ethernet peth1 vif 4 vrf tenantB
-
-            </pre>
-        <b>For future work:</b> I'd like to expand the Tenant infrastructure, enabling two different address spaces of the same tenant to communicate without the need of VPN site-2-site.
         </div>
     </div>
     <div class="footer">
         My HomeLab page is still in development
         <p></p> 
-       @2024 lptekdev/luispribeiro
+       @2022 lptekdev/luis-p-ribeiro
       </div>
 </body>
 </html>
